@@ -2,13 +2,40 @@ import { GraphQLObjectType, GraphQLString, GraphQLFloat, GraphQLList } from 'gra
 
 import { UUIDType } from '../types/uuid.js';
 import { Context } from '../interfaces.js';
+import { ProfileType } from './profiles.js';
+import { PostType } from './posts.js';
 
-export const UserType = new GraphQLObjectType({
+export const UserType: GraphQLObjectType = new GraphQLObjectType({
   name: 'User',
   fields: () => ({
     id: { type: UUIDType },
     name: { type: GraphQLString },
     balance: { type: GraphQLFloat },
+    profile: {
+      type: ProfileType,
+      resolve(parent: object, _, ctx: Context) {
+        const id: string = parent['id'] as string;
+        const profile = ctx.prisma.profile.findUnique({
+          where: {
+            userId: id,
+          },
+        });
+        return profile;
+      },
+    },
+    posts: {
+      type: new GraphQLList(PostType),
+      resolve(parent: object, _, ctx: Context) {
+        console.log(parent);
+        const id: string = parent['id'] as string;
+        const posts = ctx.prisma.post.findMany({
+            where: {
+              authorId: id,
+            },
+        });
+        return posts;
+      },
+    },
   }),
 });
 

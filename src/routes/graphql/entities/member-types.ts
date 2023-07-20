@@ -1,14 +1,9 @@
-import {
-  GraphQLObjectType,
-  GraphQLFloat,
-  GraphQLList,
-  GraphQLInt,
-} from 'graphql';
+import { GraphQLObjectType, GraphQLFloat, GraphQLList, GraphQLInt } from 'graphql';
 
 import { Context } from '../interfaces.js';
 import { MemberTypeIdType } from '../types/member-type-id.js';
 
-export const MemberType = new GraphQLObjectType({
+export const MemberType: GraphQLObjectType = new GraphQLObjectType({
   name: 'MemberType',
   fields: () => ({
     id: { type: MemberTypeIdType },
