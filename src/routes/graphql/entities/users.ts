@@ -14,17 +14,17 @@ export const UserType = new GraphQLObjectType({
 
 export const users = {
   type: new GraphQLList(UserType),
-  async resolve(_, __, ctx: Context) {
-    return await ctx.prisma.user.findMany();
+  resolve(_, __, ctx: Context) {
+    return ctx.prisma.user.findMany();
   },
 };
 
 export const user = {
   type: UserType,
   args: { id: { type: UUIDType } },
-  async resolve(_, args: object, ctx: Context) {
+  resolve(_, args: object, ctx: Context) {
     const id: string = args['id'] as string;
-    const user = await ctx.prisma.user.findUnique({
+    const user = ctx.prisma.user.findUnique({
       where: {
         id: id,
       },
