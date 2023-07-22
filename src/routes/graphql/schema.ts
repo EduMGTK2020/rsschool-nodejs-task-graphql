@@ -1,24 +1,18 @@
 import { GraphQLObjectType, GraphQLSchema } from 'graphql';
 
-import { user, users } from './entities/users.js';
-import { post, posts } from './entities/posts.js';
-import { memberType, memberTypes } from './entities/member-types.js';
-import { profile, profiles } from './entities/profiles.js';
-
-const RootQuery = new GraphQLObjectType({
-  name: 'RootQueryType',
-  fields: {
-    user,
-    users,
-    post,
-    posts,
-    memberType,
-    memberTypes,
-    profile,
-    profiles,
-  },
-});
+import { UserActions } from './entities/users.js';
+import { PostActions } from './entities/posts.js';
+import { MemberTypeActions } from './entities/member-types.js';
+import { ProfileActions } from './entities/profiles.js';
 
 export const Schema = new GraphQLSchema({
-  query: RootQuery,
+  query: new GraphQLObjectType({
+    name: 'Query',
+    fields: {
+      ...UserActions.queries,
+      ...PostActions.queries,
+      ...MemberTypeActions.queries,
+      ...ProfileActions.queries,
+    },
+  }),
 });

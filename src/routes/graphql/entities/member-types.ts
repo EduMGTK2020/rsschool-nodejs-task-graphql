@@ -12,23 +12,27 @@ export const MemberType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
-export const memberTypes = {
-  type: new GraphQLList(MemberType),
-  resolve(_, __, ctx: Context) {
-    return ctx.prisma.memberType.findMany();
-  },
-};
-
-export const memberType = {
-  type: MemberType,
-  args: { id: { type: MemberTypeIdType } },
-  resolve(_, args: object, ctx: Context) {
-    const id: string = args['id'] as string;
-    const mType = ctx.prisma.memberType.findUnique({
-      where: {
-        id: id,
+export const MemberTypeActions = {
+  queries: {
+    memberTypes: {
+      type: new GraphQLList(MemberType),
+      resolve(_, __, ctx: Context) {
+        return ctx.prisma.memberType.findMany();
       },
-    });
-    return mType;
+    },
+
+    memberType: {
+      type: MemberType,
+      args: { id: { type: MemberTypeIdType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        const mType = ctx.prisma.memberType.findUnique({
+          where: {
+            id: id,
+          },
+        });
+        return mType;
+      },
+    },
   },
 };

@@ -38,22 +38,26 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
-export const profiles = {
-  type: new GraphQLList(ProfileType),
-  resolve(_, __, ctx: Context) {
-    return ctx.prisma.profile.findMany();
-  },
-};
-
-export const profile = {
-  type: ProfileType,
-  args: { id: { type: UUIDType } },
-  resolve(_, args: object, ctx: Context) {
-    const id: string = args['id'] as string;
-    return ctx.prisma.profile.findUnique({
-      where: {
-        id: id,
+export const ProfileActions = {
+  queries: {
+    profiles: {
+      type: new GraphQLList(ProfileType),
+      resolve(_, __, ctx: Context) {
+        return ctx.prisma.profile.findMany();
       },
-    });
+    },
+
+    profile: {
+      type: ProfileType,
+      args: { id: { type: UUIDType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        return ctx.prisma.profile.findUnique({
+          where: {
+            id: id,
+          },
+        });
+      },
+    },
   },
 };

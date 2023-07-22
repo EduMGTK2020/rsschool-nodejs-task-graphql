@@ -25,23 +25,27 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
-export const posts = {
-  type: new GraphQLList(PostType),
-  resolve(_, __, ctx: Context) {
-    return ctx.prisma.post.findMany();
-  },
-};
-
-export const post = {
-  type: PostType,
-  args: { id: { type: UUIDType } },
-  resolve(_, args: object, ctx: Context) {
-    const id: string = args['id'] as string;
-    const post = ctx.prisma.post.findUnique({
-      where: {
-        id: id,
+export const PostActions = {
+  queries: {
+    posts: {
+      type: new GraphQLList(PostType),
+      resolve(_, __, ctx: Context) {
+        return ctx.prisma.post.findMany();
       },
-    });
-    return post;
+    },
+
+    post: {
+      type: PostType,
+      args: { id: { type: UUIDType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        const post = ctx.prisma.post.findUnique({
+          where: {
+            id: id,
+          },
+        });
+        return post;
+      },
+    },
   },
 };
