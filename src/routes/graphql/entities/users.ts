@@ -137,7 +137,7 @@ export const UserActions = {
         const id: string = args['id'] as string;
         try {
           await ctx.prisma.user.delete({ where: { id: id } });
-        } catch (err) {
+        } catch {
           return false;
         }
         return true;
@@ -151,6 +151,49 @@ export const UserActions = {
         const id: string = args['id'] as string;
         const dto: User = args['dto'] as User;
         return ctx.prisma.user.update({ where: { id: id }, data: dto });
+      },
+    },
+
+    subscribeTo: {
+      type: UserType,
+      args: { userId: { type: UUIDType }, authorId: { type: UUIDType } },
+      resolve(_, args: object, ctx: Context) {
+        const userId: string = args['userId'] as string;
+        const authorId: string = args['authorId'] as string;
+        return ctx.prisma.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            userSubscribedTo: {
+              create: {
+                authorId: authorId,
+              },
+            },
+          },
+        });
+      },
+    },
+
+    unsubscribeFrom: {
+      type: GraphQLBoolean,
+      args: { userId: { type: UUIDType }, authorId: { type: UUIDType } },
+      resolve: async (_, args: object, ctx: Context) => {
+        const userId: string = args['userId'] as string;
+        const authorId: string = args['authorId'] as string;
+        try {
+          await ctx.prisma.subscribersOnAuthors.delete({
+            where: {
+              subscriberId_authorId: {
+                subscriberId: userId,
+                authorId: authorId,
+              },
+            },
+          });
+        } catch {
+          return false;
+        }
+        return true;
       },
     },
   },
