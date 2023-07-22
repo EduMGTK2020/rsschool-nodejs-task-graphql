@@ -15,4 +15,12 @@ export const Schema = new GraphQLSchema({
       ...ProfileActions.queries,
     },
   }),
+  mutation: new GraphQLObjectType({
+    name: 'Mutation',
+    fields: {
+      ...UserActions.mutations,
+      ...PostActions.mutations,
+      ...ProfileActions.mutations,
+    },
+  }),
 });

@@ -1,9 +1,21 @@
-import { GraphQLObjectType, GraphQLString, GraphQLFloat, GraphQLList } from 'graphql';
+import {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLFloat,
+  GraphQLList,
+  GraphQLInputObjectType,
+} from 'graphql';
 
 import { UUIDType } from '../types/uuid.js';
 import { Context } from '../interfaces.js';
 import { ProfileType } from './profiles.js';
 import { PostType } from './posts.js';
+
+interface User {
+  id?: string;
+  name: string;
+  balance: number;
+}
 
 export const UserType: GraphQLObjectType = new GraphQLObjectType({
   name: 'User',
@@ -68,6 +80,14 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
+export const CreateUserInputType = new GraphQLInputObjectType({
+  name: 'CreateUserInput',
+  fields: {
+    name: { type: GraphQLString },
+    balance: { type: GraphQLFloat },
+  },
+});
+
 export const UserActions = {
   queries: {
     users: {
@@ -76,7 +96,6 @@ export const UserActions = {
         return ctx.prisma.user.findMany();
       },
     },
-
     user: {
       type: UserType,
       args: { id: { type: UUIDType } },
@@ -88,6 +107,16 @@ export const UserActions = {
           },
         });
         return user;
+      },
+    },
+  },
+  mutations: {
+    createUser: {
+      type: UserType,
+      args: { dto: { type: CreateUserInputType } },
+      resolve(_, args: object, ctx: Context) {
+        const dto: User = args['dto'] as User;
+        return ctx.prisma.user.create({ data: dto });
       },
     },
   },

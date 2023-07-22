@@ -1,9 +1,25 @@
-import { GraphQLObjectType, GraphQLList, GraphQLBoolean, GraphQLInt } from 'graphql';
+import {
+  GraphQLObjectType,
+  GraphQLList,
+  GraphQLBoolean,
+  GraphQLInt,
+  GraphQLInputObjectType,
+  GraphQLString,
+} from 'graphql';
 
 import { Context } from '../interfaces.js';
 import { UUIDType } from '../types/uuid.js';
 import { UserType } from './users.js';
 import { MemberType } from './member-types.js';
+import { MemberTypeIdType } from '../types/member-type-id.js';
+
+interface Profile {
+  id?: string;
+  isMale: boolean;
+  yearOfBirth: number;
+  userId: string;
+  memberTypeId: string;
+}
 
 export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
   name: 'Profile',
@@ -11,6 +27,8 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
     id: { type: UUIDType },
     isMale: { type: GraphQLBoolean },
     yearOfBirth: { type: GraphQLInt },
+    userId: { type: UUIDType },
+    memberTypeId: { type: MemberTypeIdType },
     user: {
       type: UserType,
       resolve(parent: object, _, ctx: Context) {
@@ -38,6 +56,17 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
+export const CreateProfileInputType = new GraphQLInputObjectType({
+  name: 'CreateProfileInput',
+  fields: {
+    id: { type: UUIDType },
+    isMale: { type: GraphQLBoolean },
+    yearOfBirth: { type: GraphQLInt },
+    userId: { type: UUIDType },
+    memberTypeId: { type: MemberTypeIdType },
+  },
+});
+
 export const ProfileActions = {
   queries: {
     profiles: {
@@ -46,7 +75,6 @@ export const ProfileActions = {
         return ctx.prisma.profile.findMany();
       },
     },
-
     profile: {
       type: ProfileType,
       args: { id: { type: UUIDType } },
@@ -57,6 +85,16 @@ export const ProfileActions = {
             id: id,
           },
         });
+      },
+    },
+  },
+  mutations: {
+    createProfile: {
+      type: ProfileType,
+      args: { dto: { type: CreateProfileInputType } },
+      resolve(_, args: object, ctx: Context) {
+        const dto: Profile = args['dto'] as Profile;
+        return ctx.prisma.profile.create({ data: dto });
       },
     },
   },
