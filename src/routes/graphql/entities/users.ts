@@ -18,6 +18,22 @@ interface User {
   balance: number;
 }
 
+const CreateUserInputType = new GraphQLInputObjectType({
+  name: 'CreateUserInput',
+  fields: {
+    name: { type: GraphQLString },
+    balance: { type: GraphQLFloat },
+  },
+});
+
+const ChangeUserInputType = new GraphQLInputObjectType({
+  name: 'ChangeUserInput',
+  fields: {
+    name: { type: GraphQLString },
+    balance: { type: GraphQLFloat },
+  },
+});
+
 export const UserType: GraphQLObjectType = new GraphQLObjectType({
   name: 'User',
   fields: () => ({
@@ -81,24 +97,15 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
-export const CreateUserInputType = new GraphQLInputObjectType({
-  name: 'CreateUserInput',
-  fields: {
-    name: { type: GraphQLString },
-    balance: { type: GraphQLFloat },
-  },
-});
-
 export const UserActions = {
   queries: {
-
     users: {
       type: new GraphQLList(UserType),
       resolve(_, __, ctx: Context) {
         return ctx.prisma.user.findMany();
       },
     },
-    
+
     user: {
       type: UserType,
       args: { id: { type: UUIDType } },
@@ -114,7 +121,6 @@ export const UserActions = {
     },
   },
   mutations: {
-    
     createUser: {
       type: UserType,
       args: { dto: { type: CreateUserInputType } },
@@ -135,6 +141,16 @@ export const UserActions = {
           return false;
         }
         return true;
+      },
+    },
+
+    changeUser: {
+      type: UserType,
+      args: { id: { type: UUIDType }, dto: { type: ChangeUserInputType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        const dto: User = args['dto'] as User;
+        return ctx.prisma.user.update({ where: { id: id }, data: dto });
       },
     },
   },

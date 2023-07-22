@@ -20,6 +20,25 @@ interface Profile {
   memberTypeId: string;
 }
 
+const CreateProfileInputType = new GraphQLInputObjectType({
+  name: 'CreateProfileInput',
+  fields: {
+    isMale: { type: GraphQLBoolean },
+    yearOfBirth: { type: GraphQLInt },
+    userId: { type: UUIDType },
+    memberTypeId: { type: MemberTypeIdType },
+  },
+});
+
+const ChangeProfileInputType = new GraphQLInputObjectType({
+  name: 'ChangeProfileInput',
+  fields: {
+    isMale: { type: GraphQLBoolean },
+    yearOfBirth: { type: GraphQLInt },
+    memberTypeId: { type: MemberTypeIdType },
+  },
+});
+
 export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
   name: 'Profile',
   fields: () => ({
@@ -53,17 +72,6 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
       },
     },
   }),
-});
-
-export const CreateProfileInputType = new GraphQLInputObjectType({
-  name: 'CreateProfileInput',
-  fields: {
-    id: { type: UUIDType },
-    isMale: { type: GraphQLBoolean },
-    yearOfBirth: { type: GraphQLInt },
-    userId: { type: UUIDType },
-    memberTypeId: { type: MemberTypeIdType },
-  },
 });
 
 export const ProfileActions = {
@@ -111,6 +119,16 @@ export const ProfileActions = {
           return false;
         }
         return true;
+      },
+    },
+
+    changeProfile: {
+      type: ProfileType,
+      args: { id: { type: UUIDType }, dto: { type: ChangeProfileInputType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        const dto: Profile = args['dto'] as Profile;
+        return ctx.prisma.profile.update({ where: { id: id }, data: dto });
       },
     },
   },

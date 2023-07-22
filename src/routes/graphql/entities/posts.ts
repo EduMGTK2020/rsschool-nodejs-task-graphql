@@ -17,6 +17,24 @@ interface Post {
   authorId: string;
 }
 
+const CreatePostInputType = new GraphQLInputObjectType({
+  name: 'CreatePostInput',
+  fields: {
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    authorId: { type: UUIDType },
+  },
+});
+
+const ChangePostInputType = new GraphQLInputObjectType({
+  name: 'ChangePostInput',
+  fields: {
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    authorId: { type: UUIDType },
+  },
+});
+
 export const PostType: GraphQLObjectType = new GraphQLObjectType({
   name: 'Post',
   fields: () => ({
@@ -39,17 +57,9 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
   }),
 });
 
-export const CreatePostInputType = new GraphQLInputObjectType({
-  name: 'CreatePostInput',
-  fields: {
-    title: { type: GraphQLString },
-    content: { type: GraphQLString },
-    authorId: { type: UUIDType },
-  },
-});
-
 export const PostActions = {
   queries: {
+
     posts: {
       type: new GraphQLList(PostType),
       resolve(_, __, ctx: Context) {
@@ -72,6 +82,7 @@ export const PostActions = {
     },
   },
   mutations: {
+
     createPost: {
       type: PostType,
       args: { dto: { type: CreatePostInputType } },
@@ -92,6 +103,16 @@ export const PostActions = {
           return false;
         }
         return true;
+      },
+    },
+
+    changePost: {
+      type: PostType,
+      args: { id: { type: UUIDType }, dto: { type: ChangePostInputType } },
+      resolve(_, args: object, ctx: Context) {
+        const id: string = args['id'] as string;
+        const dto: Post = args['dto'] as Post;
+        return ctx.prisma.post.update({ where: { id: id }, data: dto });
       },
     },
   },
