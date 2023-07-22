@@ -26,14 +26,43 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
     posts: {
       type: new GraphQLList(PostType),
       resolve(parent: object, _, ctx: Context) {
-        console.log(parent);
         const id: string = parent['id'] as string;
         const posts = ctx.prisma.post.findMany({
-            where: {
-              authorId: id,
-            },
+          where: {
+            authorId: id,
+          },
         });
         return posts;
+      },
+    },
+    userSubscribedTo: {
+      type: new GraphQLList(UserType),
+      resolve(parent: object, _, ctx: Context) {
+        const id: string = parent['id'] as string;
+        return ctx.prisma.user.findMany({
+          where: {
+            subscribedToUser: {
+              some: {
+                subscriberId: id,
+              },
+            },
+          },
+        });
+      },
+    },
+    subscribedToUser: {
+      type: new GraphQLList(UserType),
+      resolve(parent: object, _, ctx: Context) {
+        const id: string = parent['id'] as string;
+        return ctx.prisma.user.findMany({
+          where: {
+            userSubscribedTo: {
+              some: {
+                authorId: id,
+              },
+            },
+          },
+        });
       },
     },
   }),
