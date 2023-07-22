@@ -4,7 +4,6 @@ import {
   GraphQLBoolean,
   GraphQLInt,
   GraphQLInputObjectType,
-  GraphQLString,
 } from 'graphql';
 
 import { Context } from '../interfaces.js';
@@ -69,12 +68,14 @@ export const CreateProfileInputType = new GraphQLInputObjectType({
 
 export const ProfileActions = {
   queries: {
+
     profiles: {
       type: new GraphQLList(ProfileType),
       resolve(_, __, ctx: Context) {
         return ctx.prisma.profile.findMany();
       },
     },
+
     profile: {
       type: ProfileType,
       args: { id: { type: UUIDType } },
@@ -89,12 +90,27 @@ export const ProfileActions = {
     },
   },
   mutations: {
+
     createProfile: {
       type: ProfileType,
       args: { dto: { type: CreateProfileInputType } },
       resolve(_, args: object, ctx: Context) {
         const dto: Profile = args['dto'] as Profile;
         return ctx.prisma.profile.create({ data: dto });
+      },
+    },
+
+    deleteProfile: {
+      type: GraphQLBoolean,
+      args: { id: { type: UUIDType } },
+      resolve: async (_, args: object, ctx: Context) => {
+        const id: string = args['id'] as string;
+        try {
+          await ctx.prisma.profile.delete({ where: { id: id } });
+        } catch (err) {
+          return false;
+        }
+        return true;
       },
     },
   },

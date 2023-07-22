@@ -4,6 +4,7 @@ import {
   GraphQLFloat,
   GraphQLList,
   GraphQLInputObjectType,
+  GraphQLBoolean,
 } from 'graphql';
 
 import { UUIDType } from '../types/uuid.js';
@@ -90,12 +91,14 @@ export const CreateUserInputType = new GraphQLInputObjectType({
 
 export const UserActions = {
   queries: {
+
     users: {
       type: new GraphQLList(UserType),
       resolve(_, __, ctx: Context) {
         return ctx.prisma.user.findMany();
       },
     },
+    
     user: {
       type: UserType,
       args: { id: { type: UUIDType } },
@@ -111,12 +114,27 @@ export const UserActions = {
     },
   },
   mutations: {
+    
     createUser: {
       type: UserType,
       args: { dto: { type: CreateUserInputType } },
       resolve(_, args: object, ctx: Context) {
         const dto: User = args['dto'] as User;
         return ctx.prisma.user.create({ data: dto });
+      },
+    },
+
+    deleteUser: {
+      type: GraphQLBoolean,
+      args: { id: { type: UUIDType } },
+      resolve: async (_, args: object, ctx: Context) => {
+        const id: string = args['id'] as string;
+        try {
+          await ctx.prisma.user.delete({ where: { id: id } });
+        } catch (err) {
+          return false;
+        }
+        return true;
       },
     },
   },

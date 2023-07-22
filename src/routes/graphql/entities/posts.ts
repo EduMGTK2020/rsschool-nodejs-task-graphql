@@ -3,6 +3,7 @@ import {
   GraphQLString,
   GraphQLList,
   GraphQLInputObjectType,
+  GraphQLBoolean,
 } from 'graphql';
 
 import { Context } from '../interfaces.js';
@@ -55,6 +56,7 @@ export const PostActions = {
         return ctx.prisma.post.findMany();
       },
     },
+
     post: {
       type: PostType,
       args: { id: { type: UUIDType } },
@@ -76,6 +78,20 @@ export const PostActions = {
       resolve(_, args: object, ctx: Context) {
         const dto: Post = args['dto'] as Post;
         return ctx.prisma.post.create({ data: dto });
+      },
+    },
+
+    deletePost: {
+      type: GraphQLBoolean,
+      args: { id: { type: UUIDType } },
+      resolve: async (_, args: object, ctx: Context) => {
+        const id: string = args['id'] as string;
+        try {
+          await ctx.prisma.post.delete({ where: { id: id } });
+        } catch (err) {
+          return false;
+        }
+        return true;
       },
     },
   },
