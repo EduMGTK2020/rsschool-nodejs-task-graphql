@@ -55,12 +55,6 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
       type: UserType,
       async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['userId'] as string;
-        // const user = await ctx.prisma.user.findUnique({
-        //   where: {
-        //     id: id,
-        //   },
-        // });
-        // return user;
         return await ctx.loaders.user.load(id);
       },
     },
@@ -68,12 +62,6 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
       type: MemberType,
       async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['memberTypeId'] as string;
-        // const memberType = ctx.prisma.memberType.findUnique({
-        //   where: {
-        //     id: id,
-        //   },
-        // });
-        // return memberType;
         return await ctx.loaders.memberType.load(id);
       },
     },

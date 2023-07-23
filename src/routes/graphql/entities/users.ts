@@ -69,13 +69,6 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
       type: ProfileType,
       async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['id'] as string;
-        // const profile = ctx.prisma.profile.findUnique({
-        //   where: {
-        //     userId: id,
-        //   },
-        // });
-        // return profile;
-
         return await ctx.loaders.profile.load(id);
       },
     },
@@ -83,29 +76,12 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
       type: new GraphQLList(PostType),
       async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['id'] as string;
-        // const posts = ctx.prisma.post.findMany({
-        //   where: {
-        //     authorId: id,
-        //   },
-        // });
-        // return posts;
         return await ctx.loaders.posts.load(id);
       },
     },
     userSubscribedTo: {
       type: new GraphQLList(UserType),
       async resolve(parent: object, _, ctx: Context) {
-        // const id: string = parent['id'] as string;
-
-        // return await ctx.prisma.user.findMany({
-        //   where: {
-        //     subscribedToUser: {
-        //       some: {
-        //         subscriberId: id,
-        //       },
-        //     },
-        //   },
-        // });
         const { userSubscribedTo } = parent as User;
         if (Array.isArray(userSubscribedTo) && userSubscribedTo.length > 0) {
           return await ctx.loaders.user.loadMany(
@@ -118,16 +94,6 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
     subscribedToUser: {
       type: new GraphQLList(UserType),
       async resolve(parent: object, _, ctx: Context) {
-        // const id: string = parent['id'] as string;
-        // return await ctx.prisma.user.findMany({
-        //   where: {
-        //     userSubscribedTo: {
-        //       some: {
-        //         authorId: id,
-        //       },
-        //     },
-        //   },
-        // });
         const { subscribedToUser } = parent as User;
         if (Array.isArray(subscribedToUser) && subscribedToUser.length > 0) {
           return await ctx.loaders.user.loadMany(
@@ -145,8 +111,6 @@ export const UserActions = {
     users: {
       type: new GraphQLList(UserType),
       async resolve(_, __, ctx: Context, info: GraphQLResolveInfo) {
-        // return ctx.prisma.user.findMany();
-
         const parsedInfoObject: ResolveTree = parseResolveInfo(info) as ResolveTree;
         const { fields } = simplifyParsedResolveInfoFragmentWithType(
           parsedInfoObject,
@@ -172,12 +136,6 @@ export const UserActions = {
       args: { id: { type: UUIDType } },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
-        // const user = ctx.prisma.user.findUnique({
-        //   where: {
-        //     id: id,
-        //   },
-        // });
-        // return user;
         return await ctx.loaders.user.load(id);
       },
     },
