@@ -6,6 +6,10 @@ import {
   GraphQLInputObjectType,
 } from 'graphql';
 
+import { PrismaClient } from '@prisma/client';
+import DataLoader from 'dataloader';
+import { LoaderType } from '../interfaces.js';
+
 import { Context } from '../interfaces.js';
 import { UUIDType } from '../types/uuid.js';
 import { UserType } from './users.js';
@@ -49,26 +53,28 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
     memberTypeId: { type: MemberTypeIdType },
     user: {
       type: UserType,
-      resolve(parent: object, _, ctx: Context) {
+      async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['userId'] as string;
-        const user = ctx.prisma.user.findUnique({
-          where: {
-            id: id,
-          },
-        });
-        return user;
+        // const user = await ctx.prisma.user.findUnique({
+        //   where: {
+        //     id: id,
+        //   },
+        // });
+        // return user;
+        return await ctx.loaders.user.load(id);
       },
     },
     memberType: {
       type: MemberType,
-      resolve(parent: object, _, ctx: Context) {
+      async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['memberTypeId'] as string;
-        const memberType = ctx.prisma.memberType.findUnique({
-          where: {
-            id: id,
-          },
-        });
-        return memberType;
+        // const memberType = ctx.prisma.memberType.findUnique({
+        //   where: {
+        //     id: id,
+        //   },
+        // });
+        // return memberType;
+        return await ctx.loaders.memberType.load(id);
       },
     },
   }),
@@ -76,20 +82,19 @@ export const ProfileType: GraphQLObjectType = new GraphQLObjectType({
 
 export const ProfileActions = {
   queries: {
-
     profiles: {
       type: new GraphQLList(ProfileType),
-      resolve(_, __, ctx: Context) {
-        return ctx.prisma.profile.findMany();
+      async resolve(_, __, ctx: Context) {
+        return await ctx.prisma.profile.findMany();
       },
     },
 
     profile: {
       type: ProfileType,
       args: { id: { type: UUIDType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
-        return ctx.prisma.profile.findUnique({
+        return await ctx.prisma.profile.findUnique({
           where: {
             id: id,
           },
@@ -98,20 +103,19 @@ export const ProfileActions = {
     },
   },
   mutations: {
-
     createProfile: {
       type: ProfileType,
       args: { dto: { type: CreateProfileInputType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const dto: Profile = args['dto'] as Profile;
-        return ctx.prisma.profile.create({ data: dto });
+        return await ctx.prisma.profile.create({ data: dto });
       },
     },
 
     deleteProfile: {
       type: GraphQLBoolean,
       args: { id: { type: UUIDType } },
-      resolve: async (_, args: object, ctx: Context) => {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         try {
           await ctx.prisma.profile.delete({ where: { id: id } });
@@ -125,11 +129,20 @@ export const ProfileActions = {
     changeProfile: {
       type: ProfileType,
       args: { id: { type: UUIDType }, dto: { type: ChangeProfileInputType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         const dto: Profile = args['dto'] as Profile;
-        return ctx.prisma.profile.update({ where: { id: id }, data: dto });
+        return await ctx.prisma.profile.update({ where: { id: id }, data: dto });
       },
     },
   },
+};
+
+export const profileLoader = (prisma: PrismaClient): LoaderType => {
+  return new DataLoader<string, Profile | undefined>(async (ids: readonly string[]) => {
+    const result = await prisma.profile.findMany({
+      where: { userId: { in: ids as string[] | undefined } },
+    });
+    return ids.map((id) => result.find((x) => x.userId === id));
+  });
 };

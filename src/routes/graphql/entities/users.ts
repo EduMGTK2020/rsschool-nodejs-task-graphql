@@ -5,17 +5,42 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLBoolean,
+  GraphQLResolveInfo,
 } from 'graphql';
+
+import {
+  parseResolveInfo,
+  ResolveTree,
+  simplifyParsedResolveInfoFragmentWithType,
+} from 'graphql-parse-resolve-info';
+
+import { PrismaClient } from '@prisma/client';
+import DataLoader from 'dataloader';
+import { LoaderType } from '../interfaces.js';
 
 import { UUIDType } from '../types/uuid.js';
 import { Context } from '../interfaces.js';
 import { ProfileType } from './profiles.js';
 import { PostType } from './posts.js';
 
+interface UserDto {
+  id?: string;
+  name: string;
+  balance: number;
+}
+
 interface User {
   id?: string;
   name: string;
   balance: number;
+  userSubscribedTo?: {
+    subscriberId: string;
+    authorId: string;
+  }[];
+  subscribedToUser?: {
+    subscriberId: string;
+    authorId: string;
+  }[];
 }
 
 const CreateUserInputType = new GraphQLInputObjectType({
@@ -42,56 +67,74 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
     balance: { type: GraphQLFloat },
     profile: {
       type: ProfileType,
-      resolve(parent: object, _, ctx: Context) {
+      async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['id'] as string;
-        const profile = ctx.prisma.profile.findUnique({
-          where: {
-            userId: id,
-          },
-        });
-        return profile;
+        // const profile = ctx.prisma.profile.findUnique({
+        //   where: {
+        //     userId: id,
+        //   },
+        // });
+        // return profile;
+
+        return await ctx.loaders.profile.load(id);
       },
     },
     posts: {
       type: new GraphQLList(PostType),
-      resolve(parent: object, _, ctx: Context) {
+      async resolve(parent: object, _, ctx: Context) {
         const id: string = parent['id'] as string;
-        const posts = ctx.prisma.post.findMany({
-          where: {
-            authorId: id,
-          },
-        });
-        return posts;
+        // const posts = ctx.prisma.post.findMany({
+        //   where: {
+        //     authorId: id,
+        //   },
+        // });
+        // return posts;
+        return await ctx.loaders.posts.load(id);
       },
     },
     userSubscribedTo: {
       type: new GraphQLList(UserType),
-      resolve(parent: object, _, ctx: Context) {
-        const id: string = parent['id'] as string;
-        return ctx.prisma.user.findMany({
-          where: {
-            subscribedToUser: {
-              some: {
-                subscriberId: id,
-              },
-            },
-          },
-        });
+      async resolve(parent: object, _, ctx: Context) {
+        // const id: string = parent['id'] as string;
+
+        // return await ctx.prisma.user.findMany({
+        //   where: {
+        //     subscribedToUser: {
+        //       some: {
+        //         subscriberId: id,
+        //       },
+        //     },
+        //   },
+        // });
+        const { userSubscribedTo } = parent as User;
+        if (Array.isArray(userSubscribedTo) && userSubscribedTo.length > 0) {
+          return await ctx.loaders.user.loadMany(
+            userSubscribedTo.map((user) => user.authorId),
+          );
+        }
+        return null;
       },
     },
     subscribedToUser: {
       type: new GraphQLList(UserType),
-      resolve(parent: object, _, ctx: Context) {
-        const id: string = parent['id'] as string;
-        return ctx.prisma.user.findMany({
-          where: {
-            userSubscribedTo: {
-              some: {
-                authorId: id,
-              },
-            },
-          },
-        });
+      async resolve(parent: object, _, ctx: Context) {
+        // const id: string = parent['id'] as string;
+        // return await ctx.prisma.user.findMany({
+        //   where: {
+        //     userSubscribedTo: {
+        //       some: {
+        //         authorId: id,
+        //       },
+        //     },
+        //   },
+        // });
+        const { subscribedToUser } = parent as User;
+        if (Array.isArray(subscribedToUser) && subscribedToUser.length > 0) {
+          return await ctx.loaders.user.loadMany(
+            subscribedToUser.map((user) => user.subscriberId),
+          );
+        }
+        return null;
       },
     },
   }),
@@ -101,22 +144,41 @@ export const UserActions = {
   queries: {
     users: {
       type: new GraphQLList(UserType),
-      resolve(_, __, ctx: Context) {
-        return ctx.prisma.user.findMany();
+      async resolve(_, __, ctx: Context, info: GraphQLResolveInfo) {
+        // return ctx.prisma.user.findMany();
+
+        const parsedInfoObject: ResolveTree = parseResolveInfo(info) as ResolveTree;
+        const { fields } = simplifyParsedResolveInfoFragmentWithType(
+          parsedInfoObject,
+          info.returnType,
+        );
+        const userSubscribedTo = fields['userSubscribedTo'] != undefined;
+        const subscribedToUser = fields['subscribedToUser'] != undefined;
+
+        const users = await ctx.prisma.user.findMany({
+          include: { userSubscribedTo, subscribedToUser },
+        });
+
+        users.forEach((user) => {
+          ctx.loaders.user.prime(user.id, user);
+        });
+
+        return users;
       },
     },
 
     user: {
       type: UserType,
       args: { id: { type: UUIDType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
-        const user = ctx.prisma.user.findUnique({
-          where: {
-            id: id,
-          },
-        });
-        return user;
+        // const user = ctx.prisma.user.findUnique({
+        //   where: {
+        //     id: id,
+        //   },
+        // });
+        // return user;
+        return await ctx.loaders.user.load(id);
       },
     },
   },
@@ -124,16 +186,16 @@ export const UserActions = {
     createUser: {
       type: UserType,
       args: { dto: { type: CreateUserInputType } },
-      resolve(_, args: object, ctx: Context) {
-        const dto: User = args['dto'] as User;
-        return ctx.prisma.user.create({ data: dto });
+      async resolve(_, args: object, ctx: Context) {
+        const dto: UserDto = args['dto'] as UserDto;
+        return await ctx.prisma.user.create({ data: dto });
       },
     },
 
     deleteUser: {
       type: GraphQLBoolean,
       args: { id: { type: UUIDType } },
-      resolve: async (_, args: object, ctx: Context) => {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         try {
           await ctx.prisma.user.delete({ where: { id: id } });
@@ -147,20 +209,20 @@ export const UserActions = {
     changeUser: {
       type: UserType,
       args: { id: { type: UUIDType }, dto: { type: ChangeUserInputType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
-        const dto: User = args['dto'] as User;
-        return ctx.prisma.user.update({ where: { id: id }, data: dto });
+        const dto: UserDto = args['dto'] as UserDto;
+        return await ctx.prisma.user.update({ where: { id: id }, data: dto });
       },
     },
 
     subscribeTo: {
       type: UserType,
       args: { userId: { type: UUIDType }, authorId: { type: UUIDType } },
-      resolve(_, args: object, ctx: Context) {
+      async resolve(_, args: object, ctx: Context) {
         const userId: string = args['userId'] as string;
         const authorId: string = args['authorId'] as string;
-        return ctx.prisma.user.update({
+        return await ctx.prisma.user.update({
           where: {
             id: userId,
           },
@@ -178,7 +240,7 @@ export const UserActions = {
     unsubscribeFrom: {
       type: GraphQLBoolean,
       args: { userId: { type: UUIDType }, authorId: { type: UUIDType } },
-      resolve: async (_, args: object, ctx: Context) => {
+      async resolve(_, args: object, ctx: Context) {
         const userId: string = args['userId'] as string;
         const authorId: string = args['authorId'] as string;
         try {
@@ -197,4 +259,26 @@ export const UserActions = {
       },
     },
   },
+};
+
+export const userLoader = (prisma: PrismaClient): LoaderType => {
+  return new DataLoader<string, User | undefined>(async (ids: readonly string[]) => {
+    const usersByIds = await prisma.user.findMany({
+      where: { id: { in: ids as string[] } },
+      include: { userSubscribedTo: true, subscribedToUser: true },
+    });
+
+    const usersById = new Map<string, User>();
+    const sortedByIds: Array<User | undefined> = [];
+
+    usersByIds.forEach((user) => {
+      usersById.set(user.id, user);
+    });
+
+    ids.forEach((id) => {
+      sortedByIds.push(usersById.get(id));
+    });
+
+    return sortedByIds;
+  });
 };
