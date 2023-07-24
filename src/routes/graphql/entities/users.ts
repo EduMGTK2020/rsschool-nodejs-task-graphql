@@ -6,6 +6,7 @@ import {
   GraphQLInputObjectType,
   GraphQLBoolean,
   GraphQLResolveInfo,
+  GraphQLNonNull,
 } from 'graphql';
 
 import {
@@ -46,8 +47,8 @@ interface User {
 const CreateUserInputType = new GraphQLInputObjectType({
   name: 'CreateUserInput',
   fields: {
-    name: { type: GraphQLString },
-    balance: { type: GraphQLFloat },
+    name: { type: new GraphQLNonNull(GraphQLString) },
+    balance: { type: new GraphQLNonNull(GraphQLFloat) },
   },
 });
 
@@ -88,7 +89,7 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
             userSubscribedTo.map((user) => user.authorId),
           );
         }
-        return null;
+        return [];
       },
     },
     subscribedToUser: {
@@ -100,7 +101,7 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
             subscribedToUser.map((user) => user.subscriberId),
           );
         }
-        return null;
+        return [];
       },
     },
   }),
@@ -143,7 +144,7 @@ export const UserActions = {
   mutations: {
     createUser: {
       type: UserType,
-      args: { dto: { type: CreateUserInputType } },
+      args: { dto: { type: new GraphQLNonNull(CreateUserInputType) } },
       async resolve(_, args: object, ctx: Context) {
         const dto: UserDto = args['dto'] as UserDto;
         return await ctx.prisma.user.create({ data: dto });
@@ -152,7 +153,7 @@ export const UserActions = {
 
     deleteUser: {
       type: GraphQLBoolean,
-      args: { id: { type: UUIDType } },
+      args: { id: { type: new GraphQLNonNull(UUIDType) } },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         try {
@@ -166,7 +167,10 @@ export const UserActions = {
 
     changeUser: {
       type: UserType,
-      args: { id: { type: UUIDType }, dto: { type: ChangeUserInputType } },
+      args: {
+        id: { type: UUIDType },
+        dto: { type: new GraphQLNonNull(ChangeUserInputType) },
+      },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         const dto: UserDto = args['dto'] as UserDto;

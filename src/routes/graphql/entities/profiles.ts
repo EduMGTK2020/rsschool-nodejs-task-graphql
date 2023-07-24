@@ -4,6 +4,7 @@ import {
   GraphQLBoolean,
   GraphQLInt,
   GraphQLInputObjectType,
+  GraphQLNonNull,
 } from 'graphql';
 
 import { PrismaClient } from '@prisma/client';
@@ -27,10 +28,10 @@ interface Profile {
 const CreateProfileInputType = new GraphQLInputObjectType({
   name: 'CreateProfileInput',
   fields: {
-    isMale: { type: GraphQLBoolean },
-    yearOfBirth: { type: GraphQLInt },
-    userId: { type: UUIDType },
-    memberTypeId: { type: MemberTypeIdType },
+    isMale: { type: new GraphQLNonNull(GraphQLBoolean) },
+    yearOfBirth: { type: new GraphQLNonNull(GraphQLInt) },
+    userId: { type: new GraphQLNonNull(UUIDType) },
+    memberTypeId: { type: new GraphQLNonNull(MemberTypeIdType) },
   },
 });
 
@@ -93,7 +94,7 @@ export const ProfileActions = {
   mutations: {
     createProfile: {
       type: ProfileType,
-      args: { dto: { type: CreateProfileInputType } },
+      args: { dto: { type: new GraphQLNonNull(CreateProfileInputType) } },
       async resolve(_, args: object, ctx: Context) {
         const dto: Profile = args['dto'] as Profile;
         return await ctx.prisma.profile.create({ data: dto });
@@ -102,7 +103,7 @@ export const ProfileActions = {
 
     deleteProfile: {
       type: GraphQLBoolean,
-      args: { id: { type: UUIDType } },
+      args: { id: { type: new GraphQLNonNull(UUIDType) } },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         try {
@@ -116,7 +117,10 @@ export const ProfileActions = {
 
     changeProfile: {
       type: ProfileType,
-      args: { id: { type: UUIDType }, dto: { type: ChangeProfileInputType } },
+      args: {
+        id: { type: UUIDType },
+        dto: { type: new GraphQLNonNull(ChangeProfileInputType) },
+      },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         const dto: Profile = args['dto'] as Profile;

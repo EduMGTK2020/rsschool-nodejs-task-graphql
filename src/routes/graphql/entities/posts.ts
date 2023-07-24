@@ -4,6 +4,7 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLBoolean,
+  GraphQLNonNull,
 } from 'graphql';
 
 import { PrismaClient } from '@prisma/client';
@@ -24,9 +25,9 @@ interface Post {
 const CreatePostInputType = new GraphQLInputObjectType({
   name: 'CreatePostInput',
   fields: {
-    title: { type: GraphQLString },
-    content: { type: GraphQLString },
-    authorId: { type: UUIDType },
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    content: { type: new GraphQLNonNull(GraphQLString) },
+    authorId: { type: new GraphQLNonNull(UUIDType) },
   },
 });
 
@@ -85,7 +86,7 @@ export const PostActions = {
   mutations: {
     createPost: {
       type: PostType,
-      args: { dto: { type: CreatePostInputType } },
+      args: { dto: { type: new GraphQLNonNull(CreatePostInputType) } },
       async resolve(_, args: object, ctx: Context) {
         const dto: Post = args['dto'] as Post;
         return await ctx.prisma.post.create({ data: dto });
@@ -94,8 +95,8 @@ export const PostActions = {
 
     deletePost: {
       type: GraphQLBoolean,
-      args: { id: { type: UUIDType } },
-      async resolve (_, args: object, ctx: Context) {
+      args: { id: { type: new GraphQLNonNull(UUIDType) } },
+      async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         try {
           await ctx.prisma.post.delete({ where: { id: id } });
@@ -108,7 +109,10 @@ export const PostActions = {
 
     changePost: {
       type: PostType,
-      args: { id: { type: UUIDType }, dto: { type: ChangePostInputType } },
+      args: {
+        id: { type: UUIDType },
+        dto: { type: new GraphQLNonNull(ChangePostInputType) },
+      },
       async resolve(_, args: object, ctx: Context) {
         const id: string = args['id'] as string;
         const dto: Post = args['dto'] as Post;
